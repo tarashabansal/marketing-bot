@@ -7,14 +7,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# allow loading .env optionally for local dev (install python-dotenv if you use it)
+# load .env for local dev (python-dotenv should be installed)
 try:
     from dotenv import load_dotenv  # type: ignore
     load_dotenv()
 except Exception:
     pass
 
-# import your generator module (must be in same folder or on PYTHONPATH)
+# ensure server package imports reddit_agent from same folder
 import reddit_agent
 
 log = logging.getLogger("uvicorn.error")
@@ -25,12 +25,12 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS - allow your frontend dev server (adjust origins for production)
+# CORS - allow your frontend dev origins (adjust if needed)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",  # CRA dev
-        "http://localhost:5173",  # Vite dev
+        "http://localhost:3000",  # CRA default
+        "http://localhost:5173",  # Vite default
         "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
@@ -41,6 +41,9 @@ app.add_middleware(
 
 class GenerateRequest(BaseModel):
     prompt: str
+    tone: Optional[str] = None
+    audience: Optional[str] = None
+    platforms: Optional[List[str]] = None
     image_urls: Optional[List[str]] = None
 
 
@@ -61,22 +64,24 @@ def health():
 @app.post("/api/generate", response_model=GenerateResponse)
 def generate(req: GenerateRequest):
     """
-    Generate a post using reddit_agent.generate_post(user_prompt, image_urls=None).
-    The reddit_agent module is expected to load variables.json itself.
+    Generate a post using reddit_agent.generate_post(user_prompt, tone=None, audience=None, platforms=None, image_urls=None).
     """
+    log.info(f"Received generate request: prompt={req.prompt!r}, tone={req.tone!r}, audience={req.audience!r}, platforms={req.platforms!r}")
     try:
-        # call the function you added to reddit_agent.py
-        result = reddit_agent.generate_post(user_prompt=req.prompt, image_urls=req.image_urls)
+        result = reddit_agent.generate_post(
+            user_prompt=req.prompt,
+            tone=req.tone,
+            audience=req.audience,
+            platforms=req.platforms or [],
+            image_urls=req.image_urls or [],
+        )
     except Exception as exc:
-        # log error server-side but don't leak sensitive internals to client
         log.exception("Generation failed")
         raise HTTPException(status_code=500, detail="Generation failed. Check server logs.")
 
-    # Validate shape: if result doesn't include expected keys, normalize
     if not isinstance(result, dict):
         raise HTTPException(status_code=500, detail="Generator returned unexpected format.")
 
-    # Return result (Pydantic will enforce the response schema)
     return {
         "success": result.get("success", True),
         "platform": result.get("platform"),
@@ -89,5 +94,4 @@ def generate(req: GenerateRequest):
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("server.app:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)
