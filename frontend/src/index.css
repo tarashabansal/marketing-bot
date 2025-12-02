@@ -1,0 +1,276 @@
+/* reset & full-height so flex centering works even if parent adds layout */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+/* global background if you want */
+body {
+  background: #f5f5f5;
+  font-family: Inter, Roboto, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* wrapper that always covers the viewport and centers content */
+.auth-wrapper {
+  min-height: 100vh;            /* ensures full viewport */
+  display: flex;
+  align-items: center;          /* vertical center */
+  justify-content: center;      /* horizontal center */
+  padding: 24px;                /* small padding on very small screens */
+  box-sizing: border-box;
+}
+
+/* card */
+.auth-card {
+  width: 360px;                 /* nice fixed width for forms */
+  max-width: 100%;
+  background: #fff;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* form controls */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 14px;
+  background: #fafafa;
+}
+
+.input:focus {
+  border-color: #222;
+  background: #fff;
+}
+
+.button {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.small-link {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #0a66ff;
+  cursor: pointer;
+}
+
+/* small, accessible link-like button inside the card */
+.link-button {
+  background: transparent;
+  border: none;
+  color: #0a66ff;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+/* keep focus visible for keyboard users */
+.link-button:focus {
+  outline: 2px solid rgba(10,102,255,0.25);
+  outline-offset: 2px;
+}
+/* main layout */
+.main-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #f3f7ff 0%, #eef3ff 100%);
+  color: #0f1724;
+}
+
+/* header */
+.main-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 16px;
+  padding: 28px 40px;
+}
+.app-title {
+  margin:0;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+.app-subtitle {
+  font-size: 14px;
+  color: #5b6570;
+  margin-top: 6px;
+}
+.header-actions {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.user-pill {
+  background:#fff;
+  padding:8px 12px;
+  border-radius:999px;
+  box-shadow: 0 2px 8px rgba(15,23,36,0.06);
+  font-size: 13px;
+}
+
+/* grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 460px;
+  gap: 28px;
+  padding: 20px 40px 60px;
+  align-items: start;
+}
+
+/* cards */
+.left-card, .right-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 8px 30px rgba(13, 24, 35, 0.06);
+}
+.left-card { min-height: 420px; }
+.right-card { min-height: 420px; display:flex; flex-direction:column; }
+
+/* titles */
+.card-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+/* form controls */
+.config-form { display:flex; flex-direction: column; gap: 12px; }
+.label { font-size: 13px; color: #51606a; margin-top:6px; margin-bottom:6px; }
+
+.input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e9ed;
+  background: #fbfdff;
+  font-size: 14px;
+}
+
+.textarea {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e9ed;
+  resize: vertical;
+  min-height: 96px;
+  background: #fbfdff;
+  font-size: 14px;
+}
+
+/* platform chips */
+.platform-row { display:flex; gap: 8px; margin-top:6px; flex-wrap:wrap; }
+.chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e6edf3;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+.chip-active {
+  background: #0a66ff;
+  color: #fff;
+  border-color: rgba(10,102,255,0.2);
+  box-shadow: 0 3px 10px rgba(10,102,255,0.08);
+}
+
+/* buttons */
+.button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #0a66ff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+.button-outline {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d4d9df;
+  background: white;
+  cursor: pointer;
+}
+.btn-ghost {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(15,23,36,0.06);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-primary {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #0a66ff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+.btn-secondary {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f6f8fb;
+  border: 1px solid #eef2f7;
+  cursor: pointer;
+}
+
+/* preview */
+.preview-area {
+  flex: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius: 8px;
+  border: 1px dashed #e6e9ed;
+  padding: 16px;
+  margin-top: 8px;
+  background: #fff;
+  overflow: auto;
+}
+.preview-empty {
+  color: #9aa4b2;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-direction: column;
+}
+.preview-text {
+  white-space: pre-wrap;
+  text-align: left;
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  color: #0f1724;
+}
+
+/* preview actions */
+.preview-actions {
+  display:flex;
+  gap:10px;
+  margin-top: 12px;
+  justify-content:flex-end;
+}
+
+/* responsive */
+@media (max-width: 980px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .right-card { order: 2; margin-top: 12px; }
+}
