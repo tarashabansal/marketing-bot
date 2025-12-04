@@ -25,8 +25,7 @@ export default function MainPage() {
     setGenerated(null);
     setLoading(true);
 
-    // payload expected by server: { prompt, image_urls? }
-    // Your server loads variables.json itself (platform etc.), so send the user prompt.
+    // payload expected by server: { prompt, tone, audience, plaforms, image_urls? }
     const payload = {
       prompt: prompt,
         tone: tone,
@@ -37,10 +36,7 @@ export default function MainPage() {
     };
 
     try {
-      // OPTION A: If you want to use CRA proxy ("proxy": "http://localhost:8000"), use the relative path:
-      // const res = await fetch("/api/generate", { ... })
-
-      // OPTION B (default here): call backend directly
+      
       const backendUrl = "/api/generate";
       const res = await fetch(backendUrl, {
         method: "POST",
@@ -117,8 +113,8 @@ export default function MainPage() {
     <div className="main-root">
       <header className="main-header">
         <div>
-          <h1 className="app-title">INFLUENCE OS</h1>
-          <div className="app-subtitle">AI-Powered Content Generator</div>
+          <h1 className="app-title">AutoPostly</h1>
+          <div className="app-subtitle">Helping market your dreams</div>
         </div>
       </header>
 
