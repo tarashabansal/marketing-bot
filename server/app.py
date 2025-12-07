@@ -2,7 +2,7 @@
 import os
 import logging
 from typing import List, Optional
-
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,8 +14,6 @@ try:
 except Exception:
     pass
 
-# ensure server package imports reddit_agent from same folder
-import reddit_agent
 
 log = logging.getLogger("uvicorn.error")
 
@@ -37,7 +35,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+LINKEDIN_TOKEN = os.getenv("LINKEDIN_OAUTH_TOKEN")    
+LINKEDIN_PERSON_URN = os.getenv("LINKEDIN_ACCOUNT_URN") 
 
+class LinkedInPostRequest(BaseModel):
+    text: str
+
+
+
+@app.post("/api/linkedin_post")
+def linkedin_post(req: LinkedInPostRequest):
+    """
+    Very simple LinkedIn post using env-stored token + person URN.
+    """
+    if not LINKEDIN_TOKEN or not LINKEDIN_PERSON_URN:
+        raise HTTPException(500, "LinkedIn env vars not set")
+
+    headers = {
+        "Authorization": f"Bearer {LINKEDIN_TOKEN}",
+        "Content-Type": "application/json",
+        "X-Restli-Protocol-Version": "2.0.0"
+    }
+
+    payload = {
+        "author": LINKEDIN_PERSON_URN,
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+            "com.linkedin.ugc.ShareContent": {
+                "shareCommentary": {"text": req.text},
+                "shareMediaCategory": "NONE"
+            }
+        },
+        "visibility": {
+            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+        }
+    }
+
+    r = requests.post("https://api.linkedin.com/v2/ugcPosts", headers=headers, json=payload)
+
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+
+    return {"success": True, "linkedin_response": r.text}
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -66,6 +105,8 @@ def generate(req: GenerateRequest):
     """
     Generate a post using reddit_agent.generate_post(user_prompt, tone=None, audience=None, platforms=None, image_urls=None).
     """
+    import reddit_agent
+
     log.info(f"Received generate request: prompt={req.prompt!r}, tone={req.tone!r}, audience={req.audience!r}, platforms={req.platforms!r}")
     try:
         result = reddit_agent.generate_post(

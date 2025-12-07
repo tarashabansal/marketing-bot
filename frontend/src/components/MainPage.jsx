@@ -1,5 +1,6 @@
 // src/MainPage.jsx
 import React, { useState } from "react";
+import { ThumbsUp, MessageSquare, Repeat, Send } from "lucide-react";
 import "../index.css";
 
 export default function MainPage() {
@@ -13,6 +14,7 @@ export default function MainPage() {
   });
   const [generated, setGenerated] = useState(null); // { post_title, post_text, post_hashtags }
   const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false); // new: posting state for publish action
   const [error, setError] = useState("");
 
   function togglePlatform(key) {
@@ -28,15 +30,14 @@ export default function MainPage() {
     // payload expected by server: { prompt, tone, audience, plaforms, image_urls? }
     const payload = {
       prompt: prompt,
-        tone: tone,
-        audience: audience,
-        selected_platforms: Object.keys(platforms).filter((k) => platforms[k]),
+      tone: tone,
+      audience: audience,
+      selected_platforms: Object.keys(platforms).filter((k) => platforms[k]),
       // optionally send images later
       image_urls: [],
     };
 
     try {
-      
       const backendUrl = "/api/generate";
       const res = await fetch(backendUrl, {
         method: "POST",
@@ -50,7 +51,9 @@ export default function MainPage() {
         try {
           const body = await res.json();
           errText = body.detail || body.error || JSON.stringify(body);
-        } catch (e) { /* ignore parse error */ }
+        } catch (e) {
+          /* ignore parse error */
+        }
         throw new Error(errText);
       }
 
@@ -82,6 +85,47 @@ export default function MainPage() {
     setPlatforms({ linkedin: true, twitter: false, reddit: false });
     setGenerated(null);
     setError("");
+  }
+
+  // Modified: clears fields on success, alerts user, and tracks posting state
+  async function postToLinkedIn(text) {
+    setPosting(true);
+    try {
+      const res = await fetch("/api/linkedin_post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      // show full body for debugging when not ok
+      const bodyText = await res.text();
+
+      if (!res.ok) {
+        throw new Error(
+          `LinkedIn post failed: ${res.status} ${res.statusText} - ${bodyText}`
+        );
+      }
+
+      // try parse JSON if server returns json
+      let parsed;
+      try {
+        parsed = JSON.parse(bodyText);
+      } catch {
+        parsed = { success: true, raw: bodyText };
+      }
+
+      // SUCCESS: clear all fields and notify user
+      handleReset();
+      alert("Post published successfully on LinkedIn!");
+
+      return parsed;
+    } catch (err) {
+      console.error("postToLinkedIn error:", err);
+      alert("Failed to post on LinkedIn. Check console for details.");
+      throw err;
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function handleCopy() {
@@ -157,7 +201,7 @@ export default function MainPage() {
               >
                 LinkedIn
               </button>
-              <button
+              {/* <button
                 type="button"
                 className={`chip ${platforms.twitter ? "chip-active" : ""}`}
                 onClick={() => togglePlatform("twitter")}
@@ -170,7 +214,7 @@ export default function MainPage() {
                 onClick={() => togglePlatform("reddit")}
               >
                 Reddit
-              </button>
+              </button> */}
             </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
@@ -181,7 +225,7 @@ export default function MainPage() {
                 type="button"
                 className="button-outline"
                 onClick={handleReset}
-                disabled={loading}
+                disabled={loading || posting}
               >
                 Reset
               </button>
@@ -196,45 +240,115 @@ export default function MainPage() {
 
           <div className="preview-area">
             {loading ? (
-              <div style={{ textAlign: "center" }}>Generating…</div>
+              <div style={{ textAlign: "center", color: "#666" }}>Generating…</div>
             ) : generated ? (
-              <div style={{ width: "100%", textAlign: "left" }}>
-                {generated.post_title && (
-                  <h3 style={{ marginTop: 0 }}>{generated.post_title}</h3>
-                )}
-                <pre className="preview-text" style={{ margin: 0 }}>
-                  {generated.post_text}
-                </pre>
-                {generated.post_hashtags?.length > 0 && (
-                  <div style={{ marginTop: 12, color: "#475569" }}>
-                    {generated.post_hashtags.map((h) => (
-                      <span key={h} style={{ marginRight: 8 }}>
-                        #{h.replace(/^#/, "")}
-                      </span>
-                    ))}
+              <div className="linkedin-post">
+                {/* Header */}
+                <div className="linkedin-header">
+                  <div className="linkedin-avatar">H</div>
+                  <div className="linkedin-info">
+                    <div className="linkedin-name">Herth</div>
+                    <div className="linkedin-headline">Marketing & Growth • 1h</div>
+                    <div className="linkedin-time">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 16 16"
+                        data-supported-dps="16x16"
+                        fill="currentColor"
+                        width="16"
+                        height="16"
+                        focusable="false"
+                      >
+                        <path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM8 14A6 6 0 1114 8a6 6 0 01-6 6zm0-11a5 5 0 105 5 5 5 0 00-5-5zm.5 2h-1v3.5l2.5 1.5.5-.8-2-1.2V5z"></path>
+                      </svg>
+                    </div>
                   </div>
-                )}
-                <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                  <button className="btn-secondary" onClick={handleCopy}>
-                    Copy
-                  </button>
-                  <button className="btn-secondary" onClick={handleDownload}>
-                    Download
-                  </button>
-                  <button className="btn-primary" disabled={!generated} onClick={() => alert("Schedule/Post not implemented yet")}>
-                    Schedule / Post
-                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="linkedin-body">
+                  {generated.post_title && (
+                    <div style={{ fontWeight: "bold", marginBottom: 8 }}>
+                      {generated.post_title}
+                    </div>
+                  )}
+                  {generated.post_text}
+                  {generated.post_hashtags?.length > 0 && (
+                    <div className="linkedin-hashtags" style={{ marginTop: 8 }}>
+                      {generated.post_hashtags.map((h) => (
+                        <span key={h} style={{ marginRight: 4 }}>
+                          #{h.replace(/^#/, "")}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats (Fake) */}
+                <div className="linkedin-stats">
+                  <span className="linkedin-stats-icon">👍 👏 ❤️</span>
+                  <span style={{ marginLeft: 4 }}>88</span>
+                  <span style={{ marginLeft: "auto" }}>4 comments • 1 repost</span>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="linkedin-footer">
+                  <div className="linkedin-action">
+                    <ThumbsUp size={18} />
+                    <span>Like</span>
+                  </div>
+                  <div className="linkedin-action">
+                    <MessageSquare size={18} />
+                    <span>Comment</span>
+                  </div>
+                  <div className="linkedin-action">
+                    <Repeat size={18} />
+                    <span>Repost</span>
+                  </div>
+                  <div className="linkedin-action">
+                    <Send size={18} />
+                    <span>Send</span>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="preview-empty">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M3 7h18M3 12h18M3 17h10" stroke="#9AA4B2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path
+                    d="M3 7h18M3 12h18M3 17h10"
+                    stroke="#9AA4B2"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 <div>Generate content to see preview</div>
               </div>
             )}
           </div>
+
+          {/* Action Buttons below preview */}
+          {generated && (
+            <div className="preview-actions">
+              <button className="btn-secondary" onClick={handleCopy}>
+                Copy Text
+              </button>
+              <button
+                className="btn-primary"
+                disabled={!generated?.post_text || posting}
+                onClick={async () => {
+                  if (!generated?.post_text) return;
+                  try {
+                    await postToLinkedIn(generated.post_text);
+                  } catch (e) {
+                    /* error already handled */
+                  }
+                }}
+              >
+                {posting ? "Posting..." : "Post to LinkedIn"}
+              </button>
+            </div>
+          )}
         </aside>
       </main>
     </div>
