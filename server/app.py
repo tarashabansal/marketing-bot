@@ -32,6 +32,7 @@ app.add_middleware(
         "http://localhost:3000",  # CRA default
         "http://localhost:5173",  # Vite default
         "http://127.0.0.1:3000",
+        "https://marketing-bot-two.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
