@@ -1,5 +1,4 @@
-// src/MainPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ThumbsUp, MessageSquare, Repeat, Send } from "lucide-react";
 import "../index.css";
 
@@ -16,6 +15,73 @@ export default function MainPage() {
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false); // new: posting state for publish action
   const [error, setError] = useState("");
+
+  // LinkedIn Auth State
+  const [linkedinUser, setLinkedinUser] = useState(null);
+
+  useEffect(() => {
+    // 1. Check localStorage for existing session
+    const stored = localStorage.getItem("linkedin_user");
+    if (stored) {
+      try {
+        setLinkedinUser(JSON.parse(stored));
+      } catch (e) {
+        localStorage.removeItem("linkedin_user");
+      }
+    }
+
+    // 2. Check URL for OAuth code
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      handleAuthCallback(code);
+    }
+  }, []);
+
+  async function handleAuthCallback(code) {
+    try {
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      const res = await fetch("/api/auth/linkedin/callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Auth failed: ${err}`);
+      }
+
+      const data = await res.json();
+      // data = { access_token, urn, name, ... }
+      setLinkedinUser(data);
+      localStorage.setItem("linkedin_user", JSON.stringify(data));
+      alert(`Connected as ${data.name}!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect LinkedIn account.");
+    }
+  }
+
+  async function connectLinkedIn() {
+    try {
+      const res = await fetch("/api/auth/linkedin/url");
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to start LinkedIn login.");
+    }
+  }
+
+  function disconnectLinkedIn() {
+    setLinkedinUser(null);
+    localStorage.removeItem("linkedin_user");
+  }
 
   function togglePlatform(key) {
     setPlatforms((p) => ({ ...p, [key]: !p[key] }));
@@ -91,10 +157,16 @@ export default function MainPage() {
   async function postToLinkedIn(text) {
     setPosting(true);
     try {
+      const payload = {
+        text,
+        access_token: linkedinUser?.access_token,
+        person_urn: linkedinUser?.urn
+      };
+
       const res = await fetch("/api/linkedin_post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(payload),
       });
 
       // show full body for debugging when not ok
@@ -160,6 +232,11 @@ export default function MainPage() {
           <h1 className="app-title">AutoPostly</h1>
           <div className="app-subtitle">Helping market your dreams</div>
         </div>
+        {linkedinUser && (
+          <div className="user-pill">
+            Connected as <strong>{linkedinUser.name}</strong>
+          </div>
+        )}
       </header>
 
       <main className="main-grid">
@@ -217,6 +294,32 @@ export default function MainPage() {
               </button> */}
             </div>
 
+            {/* LinkedIn Connect Button */}
+            <div style={{ marginTop: 8 }}>
+              {!linkedinUser ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={connectLinkedIn}
+                  style={{ fontSize: 13, padding: "6px 12px" }}
+                >
+                  Connect LinkedIn Account
+                </button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-muted)" }}>
+                  <span>✅ Connected to LinkedIn</span>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={disconnectLinkedIn}
+                    style={{ color: "crimson" }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
               <button className="button" type="submit" disabled={loading}>
                 {loading ? "Generating..." : "Generate"}
@@ -245,9 +348,13 @@ export default function MainPage() {
               <div className="linkedin-post">
                 {/* Header */}
                 <div className="linkedin-header">
-                  <div className="linkedin-avatar">H</div>
+                  <div className="linkedin-avatar">
+                    {linkedinUser ? linkedinUser.name[0] : "H"}
+                  </div>
                   <div className="linkedin-info">
-                    <div className="linkedin-name">Herth</div>
+                    <div className="linkedin-name">
+                      {linkedinUser ? linkedinUser.name : "Herth"}
+                    </div>
                     <div className="linkedin-headline">Marketing & Growth • 1h</div>
                     <div className="linkedin-time">
                       <svg
@@ -338,6 +445,10 @@ export default function MainPage() {
                 disabled={!generated?.post_text || posting}
                 onClick={async () => {
                   if (!generated?.post_text) return;
+                  if (!linkedinUser) {
+                    alert("Please connect your LinkedIn account first!");
+                    return;
+                  }
                   try {
                     await postToLinkedIn(generated.post_text);
                   } catch (e) {
