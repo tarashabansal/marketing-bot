@@ -19,7 +19,7 @@ except Exception as e:
 # Load variables.json relative to this file
 # ----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-VAR_PATH = os.path.join(BASE_DIR, "variables.json")
+VAR_PATH = os.path.join(os.path.dirname(__file__), "variables.json")
 
 if not os.path.exists(VAR_PATH):
     sys.exit(f"ERROR: variables.json not found at {VAR_PATH}. Place variables.json next to reddit_agent.py")

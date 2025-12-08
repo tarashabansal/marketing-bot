@@ -201,7 +201,10 @@ def generate(req: GenerateRequest):
     """
     Generate a post using reddit_agent.generate_post(user_prompt, tone=None, audience=None, platforms=None, image_urls=None).
     """
-    import reddit_agent
+    try:
+        from server import reddit_agent
+    except ImportError:
+        import reddit_agent
 
     log.info(f"Received generate request: prompt={req.prompt!r}, tone={req.tone!r}, audience={req.audience!r}, platforms={req.platforms!r}")
     try:
